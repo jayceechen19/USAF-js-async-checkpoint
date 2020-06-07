@@ -1,3 +1,6 @@
+
+
+
 var pokemonProcess = (file) => {
     //Read the file
     var data = fs.readFileSync(file);
@@ -5,50 +8,50 @@ var pokemonProcess = (file) => {
     var pokemonNames = data.toString()
     //Create an array of strings 
     pokemonNames = pokemonNames.split('\n')
-    //Create an object to store the data
-    var pokemonObject= {}
-    pokemonNames.forEach(pokemonName => {
-        
-        //pulling the data for each pokemonNames specifically
-        //GET https://pokeapi.co/api/v2/pokemon/{id or name}/
-        fetch('https://pokeapi.co/api/v2/pokemon/'+pokemonName+'/')
+
+    //Promise.all fulfills when all the promises for each pokemon Name have been fulfilled
+    Promise.all(pokemonNames)
+    .then(nameArray => {
+        //nameArray is th entire array of pokemon names, we wan't to go through and process each name
+        nameArray.forEach(pokemonName => {
+            fetch('https://pokeapi.co/api/v2/pokemon/'+pokemonName+'/')
             .then(response => response.json())
-            .then(json => {
-                console.log(json.types)
-                //Add pokemon name (json) to object
-                for (var name in json.name){
-                    pokemonObject[name] = []
-                    //For each pokemon that's getting returned in types
-                    for (var pokemon in json.types){
-                        //Fetch the API
-                        console.log(name)
-                        /*
-                        fetch( 'https://pokeapi.co/api/v2/type/'+name+'/')
-                        .then(response => response.json()) //turn the response into json
-                        .then(json => {
-                            //console.log(json)
-                            pokemonObject[name].push(json.type)
-                        })*/
-                    }
+            .then(data => {
+                //The string that's going to be printed at the end
+                var printStr = ''
+
+                //Format the name correctly
+                var name = data.name
+                name = name[0].toUpperCase() + name.slice(1,name.length)
+                printStr += name + ": "
+
+                var typeStr = ''
+                //For each array in types, push the type name
+                for (var type in data.types){
+                    typeStr += data.types[type].type.name + ','
                 }
-                
-            
-            })
-            
+                //Getting rid of the comma
+                typeStr = typeStr.slice(0, typeStr.length -1)
+                //Add the types to the string we're returning
+                printStr += typeStr
+                //Print the string with the data
+                console.log(printStr)
+            })//Allows us to print error message elegantly
+            .catch(error => console.log(error.message))
+        })
     })
-    for(var pokemon in pokemonObject){
-        console.log(pokemon + ":" + pokemonObject[pokemon])
-    }
+    .catch(
+        //Elegantly allows us to return errors
+        error => console.log(error.message)
+    )
 }
+
+//TESTING
 const fs = require('fs')
 const fetch = require("node-fetch");
 //Test code
-fs.writeFileSync('pokemonList.txt', 'charizard\npikachu', function (err) {
+fs.writeFileSync('pokemonList.txt', 'charizard\npikachu\nbeedrill', function (err) {
     if (err) throw err;
     console.log('Written!')})
 pokemonProcess('pokemonList.txt');
-
-
-/* Documentation from API to get the pokemon id
-GET https://pokeapi.co/api/v2/pokemon/{id or name}/
-*/
+   
